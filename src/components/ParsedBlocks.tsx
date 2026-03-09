@@ -1,15 +1,5 @@
-import {
-  Card,
-  Col,
-  Empty,
-  Progress,
-  Row,
-  Space,
-  Statistic,
-  Table,
-  Tag,
-  Typography,
-} from "antd";
+import { Card, Empty, Space, Statistic, Table, Tag, Typography } from "antd";
+import { Area, Column, Line, Pie } from "@ant-design/charts";
 import type { ColumnsType } from "antd/es/table";
 import ReactMarkdown from "react-markdown";
 import type {
@@ -66,35 +56,53 @@ function TableView({ block }: { block: TableBlock }) {
 }
 
 function ChartView({ block }: { block: ChartBlock }) {
-  const points = block.datasets.flatMap((dataset) => dataset.data);
-  const max = points.length > 0 ? Math.max(...points) : 1;
+  const primaryDataset = block.datasets[0] ?? { label: "Series", data: [] };
+  const chartData = block.labels.map((label, index) => ({
+    label,
+    value: primaryDataset.data[index] ?? 0,
+  }));
+
+  const pieData = block.labels.flatMap((label, index) =>
+    block.datasets.map((dataset) => ({
+      type: `${dataset.label} - ${label}`,
+      value: dataset.data[index] ?? 0,
+    })),
+  );
 
   return (
     <Card size="small" title={block.title ?? `${block.chartType} chart`}>
-      <Space direction="vertical" style={{ width: "100%" }} size={14}>
-        {block.datasets.map((dataset) => (
-          <div key={dataset.label}>
-            <Typography.Text strong>{dataset.label}</Typography.Text>
-            <Row gutter={[8, 8]} style={{ marginTop: 8 }}>
-              {dataset.data.map((value, index) => {
-                const percent = max === 0 ? 0 : Math.round((value / max) * 100);
-                const label = block.labels[index] ?? `Item ${index + 1}`;
-                return (
-                  <Col span={24} key={`${dataset.label}-${label}`}>
-                    <Space
-                      style={{ width: "100%", justifyContent: "space-between" }}
-                    >
-                      <Typography.Text>{label}</Typography.Text>
-                      <Typography.Text>{value}</Typography.Text>
-                    </Space>
-                    <Progress percent={percent} size="small" showInfo={false} />
-                  </Col>
-                );
-              })}
-            </Row>
-          </div>
-        ))}
-      </Space>
+      {block.chartType === "line" ? (
+        <Line data={chartData} xField="label" yField="value" height={260} />
+      ) : null}
+
+      {block.chartType === "area" ? (
+        <Area data={chartData} xField="label" yField="value" height={260} />
+      ) : null}
+
+      {block.chartType === "bar" ? (
+        <Column data={chartData} xField="label" yField="value" height={260} />
+      ) : null}
+
+      {(block.chartType === "pie" || block.chartType === "doughnut") &&
+      pieData.length > 0 ? (
+        <Pie
+          data={pieData}
+          angleField="value"
+          colorField="type"
+          innerRadius={block.chartType === "doughnut" ? 0.55 : 0}
+          height={260}
+          label={{
+            text: "value",
+          }}
+        />
+      ) : null}
+
+      {chartData.length === 0 && pieData.length === 0 ? (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="Chart data is empty"
+        />
+      ) : null}
     </Card>
   );
 }
