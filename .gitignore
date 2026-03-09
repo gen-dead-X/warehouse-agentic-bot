@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 .env*
+// Optional npm cache directory
+.npm
+.pnpm-store
+.yarn-cache
